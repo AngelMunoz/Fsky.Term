@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
+    <Compile Include="Extensions.fs" />
+    <Compile Include="Terminal.Gui.Router.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-
   <ItemGroup>
+    <PackageReference Include="FSharp.Data.Adaptive" Version="1.2.16" />
+    <PackageReference Include="Navs" Version="1.0.0-rc-003" />
     <PackageReference Include="Terminal.Gui" Version="2.0.0-v2-develop.2329" />
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
   </ItemGroup>
-
 </Project>

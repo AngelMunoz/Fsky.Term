@@ -1,61 +1,141 @@
 ﻿open Terminal.Gui
+open System
+open Sampoxo
 
-type ExampleWindow() as this =
-    inherit Window()
+open Navs
+open Navs.Terminal.Gui
 
-    do
-        this.Title <- sprintf "Example App (%O to quit)" Application.QuitKey
 
-        // Create input components and labels
-        let usernameLabel = new Label(Text = "Username:")
+let Login _ _ =
+  let window = Window($"Example App (%O{Application.QuitKey} to quit)")
 
-        let userNameText =
-            new TextField(X = Pos.Right(usernameLabel) + Pos.op_Implicit (1), Width = Dim.Fill())
+  let usernameLabel = Label("Username:")
 
-        let passwordLabel =
-            new Label(
-                Text = "Password:",
-                X = Pos.Left(usernameLabel),
-                Y = Pos.Bottom(usernameLabel) + Pos.op_Implicit (1)
-            )
+  let userNameText =
+    TextField()
+      .X(Pos.Right(usernameLabel) + Pos(1))
+      .Width(Dim.Fill())
 
-        let passwordText =
-            new TextField(Secret = true, X = Pos.Left(userNameText), Y = Pos.Top(passwordLabel), Width = Dim.Fill())
+  let passwordLabel =
+    Label("Password:")
+      .X(Pos.Left(usernameLabel))
+      .Y(Pos.Bottom(usernameLabel) + Pos(1))
 
-        // Create login button
-        let btnLogin =
-            new Button(
-                Text = "Login",
-                Y = Pos.Bottom(passwordLabel) + Pos.op_Implicit (1),
-                X = Pos.Center(),
-                IsDefault = true
-            )
+  let passwordText =
+    TextField()
+      .Secret(true)
+      .X(Pos.Left(userNameText))
+      .Y(Pos.Top(passwordLabel))
+      .Width(Dim.Fill())
 
-        // When login button is clicked display a message popup
-        btnLogin.Accept.Add(fun _ ->
-            if userNameText.Text = "admin" && passwordText.Text = "password" then
-                MessageBox.Query("Logging In", "Login Successful", "Ok") |> ignore
-                ExampleWindow.UserName <- userNameText.Text.ToString()
-                Application.RequestStop()
-            else
-                MessageBox.ErrorQuery("Logging In", "Incorrect username or password", "Ok")
-                |> ignore)
+  let btnLogin =
+    Button("Login")
+      .X(Pos.Bottom(passwordLabel) + Pos(1))
+      .Y(Pos.Center())
+      .IsDefault(true)
+      .OnAccept(fun _ ->
+        if userNameText.Text = "admin" && passwordText.Text = "password" then
+          MessageBox.Query("Logging In", "Login Successful", "Ok") |> ignore
+          Application.RequestStop()
+        else
+          MessageBox.ErrorQuery(
+            "Logging In",
+            "Incorrect username or password",
+            "Ok"
+          )
+          |> ignore
+      )
 
-        // Add the views to the Window
-        this.Add(usernameLabel, userNameText, passwordLabel, passwordText, btnLogin)
+  window.Content(
+    usernameLabel,
+    userNameText,
+    passwordLabel,
+    passwordText,
+    btnLogin
+  )
 
-    static member val UserName = "" with get, set
+let Home _ (navigable: INavigable<Window>) =
+  let label = Label("Welcome to the Home Page")
+
+  let homeBtn =
+    Button("About")
+      .Y(Pos.Bottom(label))
+      .OnAccept(fun _ ->
+        navigable.NavigateByName("about")
+        |> Async.AwaitTask
+        |> Async.Ignore
+        |> Async.StartImmediate
+      )
+
+  let login =
+    Button("Login")
+      .Y(Pos.Bottom(homeBtn))
+      .OnAccept(fun _ ->
+        navigable.NavigateByName("login")
+        |> Async.AwaitTask
+        |> Async.Ignore
+        |> Async.StartImmediate
+      )
+
+  Window("Home")
+    .Content(label, homeBtn, login)
+
+let About _ (navigable: INavigable<Window>) =
+  let label = Label("Welcome to the About Page")
+
+  let homeBtn =
+    Button("Home")
+      .Y(Pos.Bottom(label))
+      .OnAccept(fun _ ->
+        navigable.NavigateByName("home")
+        |> Async.AwaitTask
+        |> Async.Ignore
+        |> Async.StartImmediate
+      )
+
+  let login =
+    Button("Login")
+      .Y(Pos.Bottom(homeBtn))
+      .OnAccept(fun _ ->
+        navigable.NavigateByName("login")
+        |> Async.AwaitTask
+        |> Async.Ignore
+        |> Async.StartImmediate
+      )
+
+  Window("About")
+    .Content(label, homeBtn, login)
+
+
+let routes = [
+  Route.define("home", "/", Home)
+  Route.define("about", "/about", About)
+  Route.define("login", "/Login", Login)
+]
+
+let router: IRouter<Window> = TerminalGuiRouter(routes)
 
 [<EntryPoint>]
 let main argv =
-    Application.Init()
-    Application.Run<ExampleWindow>().Dispose()
+  Application.Init()
 
-    // Before the application exits, reset Terminal.Gui for clean shutdown
-    Application.Shutdown()
+  let deepLink =
+    argv
+    |> Array.tryFind(fun arg -> arg.StartsWith("sampoxo:"))
+    |> Option.bind(fun arg -> 
+      try 
+        Uri(arg) |> Some
+      with _ -> None
+    )
+    |> Option.map(fun url -> 
+       url.PathAndQuery + url.Fragment
+     )
+    |> Option.defaultValue("/")
 
-    // To see this output on the screen it must be done after shutdown,
-    // which restores the previous screen.
-    printfn "Username: %s" ExampleWindow.UserName
+  router.Navigate(deepLink) |> Task.FireAndForget
 
-    0 // return an integer exit code
+  Application.Run(new RouterOutlet(router))
+  // Before the application exits, reset Terminal.Gui for clean shutdown
+  Application.Shutdown()
+
+  0 // return an integer exit code
