@@ -7,6 +7,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Extensions.fs" />
+    <Compile Include="Services/Auth.fs" />
+    <Compile Include="Services/FskyTermHost.fs" />
     <Compile Include="Views/Home.fs" />
     <Compile Include="Views/About.fs" />
     <Compile Include="Views/Login.fs" />
@@ -19,7 +21,12 @@
   <ItemGroup>
     <PackageReference Include="FishyFlip" Version="2.1.1" />
     <PackageReference Include="FSharp.Data.Adaptive" Version="1.2.16" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
     <PackageReference Include="Navs.Terminal.Gui" Version="1.0.0-rc-004" />
+    <PackageReference Include="Serilog" Version="4.1.0" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
     <PackageReference Include="Terminal.Gui" Version="2.0.0-v2-develop.2329" />
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
   </ItemGroup>

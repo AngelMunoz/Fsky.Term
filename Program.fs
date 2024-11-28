@@ -1,18 +1,42 @@
-﻿open Terminal.Gui
-open Navs.Terminal.Gui
+﻿open System
+open Serilog
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
+
+open FishyFlip
+
+open Terminal.Gui
+open Navs
 
 open Fsky.Term
-open Fsky.Term.Routes
+open Fsky.Term.Services
 
-[<EntryPoint>]
+[<EntryPoint; STAThread>]
 let main argv =
-  Application.Init()
 
-  let deepLink = Routes.findDeepLink argv
-  router.Navigate(deepLink) |> Task.FireAndForget
+  Log.Logger <-
+    LoggerConfiguration()
+#if DEBUG
+      .MinimumLevel.Debug()
+#else
+      .MinimumLevel.Information()
+#endif
+      .WriteTo.Console()
+      .WriteTo.File("fsky.term.log", rollingInterval = RollingInterval.Day)
+      .CreateLogger()
 
-  Application.Run(new RouterOutlet(router))
-  // Before the application exits, reset Terminal.Gui for clean shutdown
-  Application.Shutdown()
+  let host = Host.CreateApplicationBuilder(argv)
+  Routes.validateAndSetDeepLink(host.Configuration, argv)
+
+  host.Services
+    .AddSerilog(Log.Logger)
+    .AddSingleton<IRouter<Window>>(Routes.build)
+    .AddSingleton<ATProtocol>(AtProto.getAtProto)
+    .AddHostedService<FskyTermHost>()
+  |> ignore
+
+  let app = host.Build()
+
+  app.Start()
 
   0 // return an integer exit code
