@@ -9,17 +9,28 @@ open Navs.Terminal.Gui
 
 open Fsky.Term.Views
 open Fsky.Term.Controllers
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Configuration
+open Microsoft.Extensions.Logging
 
 
-let router: IRouter<Window> =
+let build (services: IServiceProvider) : IRouter<Window> =
+  let logFactory = services.GetRequiredService<ILoggerFactory>()
+
   TerminalGuiRouter(
     [
       Route.define("home", "/", Home.controller Home.view)
       Route.define("about", "/about", About.controller About.view)
-      Route.define("login", "/Login", Login.controller Login.view)
+      Route.define(
+        "login",
+        "/login?username",
+        Login.controller {
+          services = Login.buildServices(logFactory, services)
+          renderView = Login.view
+        }
+      )
     ]
   )
-
 
 let findDeepLink argv =
 
@@ -32,4 +43,20 @@ let findDeepLink argv =
       None
   )
   |> Option.map(fun url -> url.PathAndQuery + url.Fragment)
-  |> Option.defaultValue("/")
+
+let validateAndSetDeepLink (config: IConfiguration, argv) =
+  match config.GetValue("DeepLink") with
+  | null ->
+    match findDeepLink argv with
+    | None -> config["DeepLink"] <- null
+    | Some deepLink -> config["DeepLink"] <- deepLink
+  | deepLink ->
+    try
+      let uri = Uri(deepLink)
+
+      if uri.Scheme <> "fsky" then
+        ()
+
+      config["DeepLink"] <- uri.PathAndQuery + uri.Fragment
+    with _ ->
+      config["DeepLink"] <- null

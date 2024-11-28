@@ -4,8 +4,14 @@ open Terminal.Gui
 open Fsky.Term
 
 module Home =
+
+  type ViewArgs = {
+    title: string
+    requestNavigation: string -> unit
+  }
+
   let view onNavigate =
-    let label = Label("Home (Press %O{Application.QuitKey} to quit)")
+    let label = Label($"Home (Press %O{Application.QuitKey} to quit)")
 
     let homeBtn =
       Button("About")
