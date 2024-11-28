@@ -40,48 +40,15 @@ type ViewExtensions() =
     this
 
   [<Extension>]
-  static member inline Title(this: #View, title: string cval) =
-    let dis =
-      this.TitleChanged
-      |> Observable.subscribe(fun s ->
-        transact(fun () -> title.Value <- this.Title)
-      )
-
-    let dis2 = title.AddCallback(fun value -> this.Title <- value)
-
-    this.Disposing.Add(fun _ ->
-      dis.Dispose()
-      dis2.Dispose()
-    )
-
-    this
-
-  [<Extension>]
   static member inline Enabled(this: #View, enabled: bool) =
     this.Enabled <- enabled
     this
 
   [<Extension>]
   static member inline Enabled(this: #View, enabled: bool aval) =
+    this.Enabled <- enabled |> AVal.force
     let dis = enabled.AddCallback(fun value -> this.Enabled <- value)
     this.Disposing.Add(fun _ -> dis.Dispose())
-    this
-
-  [<Extension>]
-  static member inline Enabled(this: #View, enabled: bool cval) =
-    let dis =
-      this.EnabledChanged
-      |> Observable.subscribe(fun s ->
-        transact(fun () -> enabled.Value <- this.Enabled)
-      )
-
-    let dis2 = enabled.AddCallback(fun value -> this.Enabled <- value)
-
-    this.Disposing.Add(fun _ ->
-      dis.Dispose()
-      dis2.Dispose()
-    )
-
     this
 
   [<Extension>]
@@ -91,53 +58,14 @@ type ViewExtensions() =
 
   [<Extension>]
   static member inline Visible(this: #View, visible: bool aval) =
+    this.Visible <- visible |> AVal.force
     let dis = visible.AddCallback(fun value -> this.Visible <- value)
     this.Disposing.Add(fun _ -> dis.Dispose())
     this
 
   [<Extension>]
-  static member inline Visible(this: #View, visible: bool cval) =
-    let dis =
-      this.VisibleChanged
-      |> Observable.subscribe(fun s ->
-        transact(fun () -> visible.Value <- this.Visible)
-      )
-
-    let dis2 = visible.AddCallback(fun value -> this.Visible <- value)
-
-    this.Disposing.Add(fun _ ->
-      dis.Dispose()
-      dis2.Dispose()
-    )
-
-    this
-
-  [<Extension>]
   static member inline Text(this: #View, text: string) =
     this.Text <- text
-    this
-
-  [<Extension>]
-  static member inline Text(this: #View, title: string aval) =
-    let dis = title.AddCallback(fun value -> this.Text <- value)
-    this.Disposing.Add(fun _ -> dis.Dispose())
-    this
-
-  [<Extension>]
-  static member inline Text(this: #View, title: string cval) =
-    let dis =
-      this.TextChanged
-      |> Observable.subscribe(fun s ->
-        transact(fun () -> title.Value <- this.Title)
-      )
-
-    let dis2 = title.AddCallback(fun value -> this.Text <- value)
-
-    this.Disposing.Add(fun _ ->
-      dis.Dispose()
-      dis2.Dispose()
-    )
-
     this
 
   [<Extension>]
@@ -174,21 +102,64 @@ type ViewExtensions() =
 type TextFieldExtensions() =
 
   [<Extension>]
-  static member inline Secret(this: #TextField, isSecret: bool) =
+  static member inline Secret(this: TextField, isSecret: bool) =
     this.Secret <- isSecret
+    this
+
+  [<Extension>]
+  static member inline Text(this: TextField, text: string) =
+    this.Text <- text
+    this
+
+  [<Extension>]
+  static member inline Text(this: TextField, title: string aval) =
+    this.Text <- title |> AVal.force
+    let dis = title.AddCallback(fun value -> this.Text <- value)
+    this.Disposing.Add(fun _ -> dis.Dispose())
+    this
+
+  [<Extension>]
+  static member inline Text(this: TextField, title: string cval) =
+    this.Text <- title.Value
+
+
+    let dis =
+      this.TextChanged.Subscribe(fun s ->
+        transact(fun () -> title.Value <- this.Text)
+      )
+
+    let dis2 = title.AddCallback(fun value -> this.Text <- value)
+
+    this.Disposing.Add(fun _ ->
+      dis.Dispose()
+      dis2.Dispose()
+    )
+
     this
 
 [<Extension>]
 type ButtonExtensions() =
 
   [<Extension>]
-  static member inline IsDefault(this: #Button, isDefault: bool) =
+  static member inline IsDefault(this: Button, isDefault: bool) =
     this.IsDefault <- isDefault
     this
 
   [<Extension>]
-  static member inline OnAccept(this: #Button, [<InlineIfLambda>] action) =
+  static member inline OnAccept(this: Button, [<InlineIfLambda>] action) =
     this.Accept.Add(action)
+    this
+
+  [<Extension>]
+  static member inline Enabled(this: Button, value) =
+    this.Enabled <- value
+    this
+
+  [<Extension>]
+  static member inline Enabled(this: Button, value: bool aval) =
+    this.Enabled <- value |> AVal.force
+    let dis = value.AddCallback(fun value -> this.Enabled <- value)
+    this.Disposing.Add(fun _ -> dis.Dispose())
     this
 
 [<AutoOpen>]
@@ -211,7 +182,6 @@ type Constructors =
 
   static member inline Pos(value: int) = Pos.op_Implicit value
 
-
 module Task =
   open System.Threading.Tasks
 
@@ -223,6 +193,7 @@ module Task =
             do! work.ConfigureAwait(false)
           with _ ->
             ()
+
           return Task.CompletedTask
         }
         :> Task
