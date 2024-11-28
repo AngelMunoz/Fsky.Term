@@ -1,4 +1,4 @@
-namespace Sampoxo
+namespace Fsky.Term
 
 open Terminal.Gui
 open System
@@ -212,6 +212,21 @@ type Constructors =
   static member inline Pos(value: int) = Pos.op_Implicit value
 
 
-module Task = 
-  let inline FireAndForget (task: System.Threading.Tasks.Task) =
-    System.Threading.Tasks.Task.Run(fun () -> task) |> ignore
+module Task =
+  open System.Threading.Tasks
+
+  let inline FireAndForget (work: Task) =
+    Task.Run(fun () ->
+      if not work.IsCompleted || not work.IsFaulted then
+        task {
+          try
+            do! work.ConfigureAwait(false)
+          with _ ->
+            ()
+          return Task.CompletedTask
+        }
+        :> Task
+      else
+        Task.CompletedTask
+    )
+    |> ignore

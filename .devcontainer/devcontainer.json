@@ -12,7 +12,10 @@
       // Add the IDs of extensions you want installed when the container is created.
       "extensions": [
         "Ionide.Ionide-fsharp",
-        "ms-dotnettools.csharp"
+        "ms-dotnettools.csharp",
+        "eamodio.gitlens",
+        "EditorConfig.EditorConfig",
+        "oderwat.indent-rainbow"
       ]
     }
   },
