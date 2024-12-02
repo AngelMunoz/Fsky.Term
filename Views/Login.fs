@@ -21,7 +21,7 @@ module Login =
     let window = Window($"{args.title} (Press %O{Application.QuitKey} to quit)")
 
     let enableButton = cval true
-    let username = cval (defaultArg args.username "")
+    let username = cval(defaultArg args.username "")
     let password = cval ""
 
 
@@ -55,19 +55,27 @@ module Login =
         .OnAccept(fun _ ->
           task {
             if username.Value = "" || password.Value = "" then
-              MessageBox.Query("Missing fields", "Username and Password are required") |> ignore
+              MessageBox.Query(
+                "Missing fields",
+                "Username and Password are required"
+              )
+              |> ignore
+
               return ()
             else
               AVal.setValue enableButton false
+
               try
                 do! args.requestLogin(username.Value, password.Value)
 
               finally
                 AVal.setValue enableButton true
+
               return ()
           }
           |> Task.FireAndForget
         )
+
     let logingMsgLabel =
       Label("Logging in...")
         .Visible(enableButton |> AVal.map not)

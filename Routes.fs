@@ -12,15 +12,37 @@ open Fsky.Term.Controllers
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
+open Fsky.Term.Services
 
+open FSharp.Data.Adaptive
+
+let authGuard (auth: AuthService) = fun _ (ctx: RouteContext) -> async {
+    do! auth.TryRestoreSession() |> Async.AwaitTask
+
+    match auth.Did |> AVal.force with
+    | Some _ ->
+      if ctx.path = "/login" then
+        return Redirect("/")
+      else
+      return Continue
+    | None -> return Redirect("/login")
+  }
 
 let build (services: IServiceProvider) : IRouter<Window> =
   let logFactory = services.GetRequiredService<ILoggerFactory>()
+  let auth = services.GetRequiredService<AuthService>()
 
   TerminalGuiRouter(
     [
-      Route.define("home", "/", Home.controller Home.view)
-      Route.define("about", "/about", About.controller About.view)
+      Route.define(
+        "home",
+        "/",
+        Home.controller {
+          services = Home.buildServices(logFactory, services)
+          renderView = Home.view
+        }
+      )
+      |> Route.canActivateAsync(authGuard auth)
       Route.define(
         "login",
         "/login?username",
@@ -29,6 +51,7 @@ let build (services: IServiceProvider) : IRouter<Window> =
           renderView = Login.view
         }
       )
+      |> Route.canActivateAsync(authGuard auth)
     ]
   )
 

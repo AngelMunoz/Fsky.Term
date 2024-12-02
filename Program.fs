@@ -32,6 +32,8 @@ let main argv =
     .AddSerilog(Log.Logger)
     .AddSingleton<IRouter<Window>>(Routes.build)
     .AddSingleton<ATProtocol>(AtProto.getAtProto)
+    .AddSingleton<FeedService>()
+    .AddSingleton<AuthService>()
     .AddHostedService<FskyTermHost>()
   |> ignore
 

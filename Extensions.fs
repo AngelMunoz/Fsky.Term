@@ -35,6 +35,7 @@ type ViewExtensions() =
 
   [<Extension>]
   static member inline Title(this: #View, title: string aval) =
+    this.Title <- title |> AVal.force
     let dis = title.AddCallback(fun value -> this.Title <- value)
     this.Disposing.Add(fun _ -> dis.Dispose())
     this
@@ -162,6 +163,25 @@ type ButtonExtensions() =
     this.Disposing.Add(fun _ -> dis.Dispose())
     this
 
+[<Extension>]
+type RadioGroupExtensions =
+
+  [<Extension>]
+  static member inline OnSelectedItemChanged
+    (this: RadioGroup, [<InlineIfLambda>] action)
+    =
+    let dis =
+      this.SelectedItemChanged.Subscribe(
+        { new IObserver<SelectedItemChangedArgs> with
+            member __.OnCompleted() = ()
+            member __.OnError(_) = ()
+            member __.OnNext(value) = action value
+        }
+      )
+
+    this.Disposing.Add(fun _ -> dis.Dispose())
+    this
+
 [<AutoOpen>]
 type Constructors =
   static member inline Label(?text) = new Label(Text = defaultArg text "")
@@ -179,6 +199,14 @@ type Constructors =
     let v = new View()
     v.Add(views)
     v
+
+  static member inline RadioGroup(labels: string seq) =
+    new RadioGroup(RadioLabels = (labels |> Array.ofSeq))
+
+
+  static member inline ListView() = new ListView()
+
+  static member inline ScrollView() = new ScrollView()
 
   static member inline Pos(value: int) = Pos.op_Implicit value
 
